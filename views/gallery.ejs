@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Matrimonio Gaby & Carlos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <link rel="stylesheet" href="/assets/gallery.css">
+    <style>
+        .gallery-item .media-wrapper.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .gallery-item .media-wrapper.fullscreen img,
+        .gallery-item .media-wrapper.fullscreen video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border: 2px solid white; /* Optional: to better distinguish media from background */
+        }
+        #loadingIndicator { display: none; text-align: center; padding: 20px; font-style: italic; }
+    </style>
+    <script>
+        let currentPage = 1;
+        let isLoading = false;
+        let allLoaded = false;
+        const ITEMS_PER_PAGE_CLIENT = "<%= limit %>";
+        let currentUserForFilter = "<%= selectedUserFromNumber || '' %>";
+
+        function filterByUser(selectedUser) {
+            currentUserForFilter = selectedUser;
+            let url = '/gallery';
+            if (selectedUser) {
+                url += '?user=' + encodeURIComponent(selectedUser);
+            }
+            window.location.href = url;
+        }
+
+        function toggleFullscreen(element, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            element.classList.toggle('fullscreen');
+            const mediaInClickedElement = element.querySelector('video, audio');
+            if (element.classList.contains('fullscreen')) {
+                if (mediaInClickedElement) {
+                    mediaInClickedElement.play();
+                }
+            } else {
+                if (mediaInClickedElement) {
+                    mediaInClickedElement.pause();
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const initialUser = params.get('user');
+            if (initialUser) {
+                currentUserForFilter = initialUser;
+                const selectElement = document.getElementById('userSelect');
+                if (selectElement) {
+                    selectElement.value = initialUser;
+                }
+            }
+
+            const initialItemCount = document.querySelectorAll('.gallery-item').length;
+            if (initialItemCount < ITEMS_PER_PAGE_CLIENT || (initialItemCount === 0 && currentPage === 1)) {
+                allLoaded = true;
+                const loadingIndicator = document.getElementById('loadingIndicator');
+                if (loadingIndicator && initialItemCount > 0) {
+                    // loadingIndicator.textContent = 'No hay mas imagenes.';
+                    // loadingIndicator.style.display = 'block'; 
+                } else if (loadingIndicator && initialItemCount === 0) {
+                    loadingIndicator.style.display = 'none';
+                }
+            }
+            
+            if (initialItemCount === 0 && currentPage === 1 && !allLoaded) {
+                allLoaded = true;
+            }
+
+            setTimeout(() => {
+                if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200) {
+                    loadMoreItems();
+                }
+            }, 2000);
+
+            window.addEventListener('scroll', () => {
+                if (isLoading || allLoaded) return;
+                if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200) {
+                    loadMoreItems();
+                }
+            });
+        });
+
+        async function loadMoreItems() {
+            if (isLoading || allLoaded) return;
+            isLoading = true;
+            currentPage++;
+
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            if (loadingIndicator) {
+                loadingIndicator.textContent = 'Loading more...';
+                loadingIndicator.style.display = 'block';
+            }
+
+            let url = `/gallery?page=${currentPage}&limit=${ITEMS_PER_PAGE_CLIENT}&partial=true`;
+            if (currentUserForFilter && currentUserForFilter !== "") {
+                url += '&user=' + encodeURIComponent(currentUserForFilter);
+            }
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+                const newItemsHtml = await response.text();
+
+                if (newItemsHtml.trim() !== "") {
+                    document.querySelector('.gallery-container').insertAdjacentHTML('beforeend', newItemsHtml);
+                } else {
+                    allLoaded = true; 
+                    if (loadingIndicator) {
+                        loadingIndicator.textContent = 'No hay mas imagenes.';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load more items:', error);
+                if (loadingIndicator) {
+                    loadingIndicator.textContent = 'Error loading media. Try scrolling again.';
+                }
+                currentPage--; 
+            } finally {
+                isLoading = false;
+                if (loadingIndicator && !allLoaded && loadingIndicator.textContent === 'Loading more...') {
+                    loadingIndicator.style.display = 'none';
+                } else if (loadingIndicator && allLoaded) {
+                    setTimeout(() => { if(loadingIndicator.textContent === 'No hay mas imagenes.') loadingIndicator.style.display = 'none'; }, 3000);
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <main class="container">
+        <hgroup>
+            <h2>Galeria <%= selectedUserName ? 'de ' + selectedUserName : '' %></h2>
+            <h3>Matrimonio Gaby & Carlos</h3>
+        </hgroup>
+        <div id="userSelectContainer">
+            <label for="userSelect">Filtrar por usuario:</label>
+            <select id="userSelect" onchange="filterByUser(this.value)">
+                <option value="">All Users</option>
+                <% users.forEach(user => { %>
+                    <option value="<%= user.fromNumber %>" <%= user.fromNumber === selectedUserFromNumber ? 'selected' : '' %>>
+                        <%= user.name || 'Unnamed User' %> (<%= user.fromNumber %>)
+                    </option>
+                <% }); %>
+            </select>
+        </div>
+        <div class="gallery-container">
+            <% mediaRows.forEach(row => { %>
+                <%- include('_gallery_item', {row: row}) %>
+            <% }); %>
+        </div>
+        <div id="loadingIndicator">Cargando mas...</div>
+    </main>
+</body>
+</html>

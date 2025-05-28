@@ -1,0 +1,40 @@
+<%
+  const mediaPath = `images/${row.filename}`;
+  let formattedDateTime = '';
+  if (row.timestamp) {
+    const date = new Date(row.timestamp * 1000);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    formattedDateTime = `${hours}:${minutes}`;
+
+    // console.log(`Formatted date and time: ${date.toISOString()} -> ${formattedDateTime}`);
+
+  } 
+ %>
+<div class="gallery-item">
+    <article>
+        <header>
+            <% if (row.type === 'image') { %>
+                <div class="media-wrapper" onclick="toggleFullscreen(this, event)">
+                    <img src="<%= mediaPath %>" >
+                    <div class="timestamp-info"><small><%= formattedDateTime %></small></div>
+                </div>
+            <% } else if (row.type === 'video') { %>
+                <% const posterPath = mediaPath.substring(0, mediaPath.lastIndexOf('.')) + '.jpg'; %>
+                <div class="media-wrapper" onclick="toggleFullscreen(this, event)">
+                    <video controls poster="<%= posterPath %>" src="<%= mediaPath %>" ></video>
+                    <div class="timestamp-info"><small><%= formattedDateTime %></small></div>
+                </div>
+            <% } else if (row.type === 'audio') { %>
+                <audio controls src="<%= mediaPath %>" title="Audio from <%= userName %>"></audio>
+                <div class="timestamp-info"><small><%= formattedDateTime %></small></div>
+            <% } else { %>
+                <div class="media-wrapper" onclick="toggleFullscreen(this, event)">
+                    <img src="<%= mediaPath %>" >
+                    <div class="timestamp-info"><small><%= formattedDateTime %></small></div>
+                </div>
+            <% } %>
+        </header>
+        <small><%= row.userName %><%= row.text ? ': ' + row.text : '' %></small>
+    </article>
+</div>

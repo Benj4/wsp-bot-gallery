@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Saved Messages</title>
+    <style>
+        table { font-family: arial, sans-serif; border-collapse: collapse; width: 100%; }
+        td, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h2>Saved Messages</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>From</th>
+            <th>Timestamp</th>
+            <th>Type</th>
+            <th>Text</th>
+            <th>Filename</th>
+            <th>Media ID</th>
+            <th>Saved</th>
+        </tr>
+        <% rows.forEach(row => { %>
+            <tr>
+                <td><%= row.id %></td>
+                <td><%= row.fromNumber %></td>
+                <td><%= new Date(parseInt(row.timestamp) * 1000).toLocaleString() %></td>
+                <td><%= row.type %></td>
+                <td><%= row.text || '' %></td>
+                <td><%= row.filename || '' %></td>
+                <td><%= row.mediaId || '' %></td>
+                <td><%= row.saved %></td>
+            </tr>
+        <% }); %>
+    </table>
+</body>
+</html>

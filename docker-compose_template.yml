@@ -1,0 +1,22 @@
+services:
+  wspwebhook:
+    build: .
+    container_name: wspwebhook
+    working_dir: /usr/src/app
+    volumes:
+      - .:/usr/src/app
+    command: node index.js
+    # command: sh -c "npm install && npm start"
+    ports:
+      - "8085:8085"
+    environment:
+      - NODE_ENV=development
+      - WHATSAPP_API_TOKEN=EAA...
+    restart: unless-stopped
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-wspwebhook
+    command: tunnel --no-autoupdate run --token eyJ...
+    restart: unless-stopped
+    depends_on:
+      - wspwebhook
