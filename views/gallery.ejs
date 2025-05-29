@@ -28,6 +28,25 @@
             border: 2px solid white; /* Optional: to better distinguish media from background */
         }
         #loadingIndicator { display: none; text-align: center; padding: 20px; font-style: italic; }
+        .fullscreen-nav {
+            position: fixed;
+            bottom: 3vh;
+            /* transform: translateY(-50%); */
+            width: 10%;
+            background-color: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            z-index: 1001; /* Above media but below potential close buttons */
+            font-size: 24px;
+        }
+        .fullscreen-nav.prev {
+            left: 10px;
+        }
+        .fullscreen-nav.next {
+            right: 10px;
+        }
     </style>
     <script>
         let currentPage = 1;
@@ -52,13 +71,126 @@
             }
             element.classList.toggle('fullscreen');
             const mediaInClickedElement = element.querySelector('video, audio');
+
             if (element.classList.contains('fullscreen')) {
                 if (mediaInClickedElement) {
                     mediaInClickedElement.play();
                 }
+                addFullscreenControls(element);
             } else {
                 if (mediaInClickedElement) {
                     mediaInClickedElement.pause();
+                }
+                removeFullscreenControls();
+            }
+        }
+
+        function addFullscreenControls(currentElement) {
+            removeFullscreenControls();
+
+            const prevButton = document.createElement('button');
+            prevButton.innerHTML = '&lt;';
+            prevButton.className = 'fullscreen-nav prev';
+            prevButton.onclick = (e) => {
+                e.stopPropagation(); // Prevent toggling fullscreen off
+                showPrevMedia(currentElement);
+            };
+            // document.body.appendChild(prevButton);
+
+            const nextButton = document.createElement('button');
+            nextButton.innerHTML = '&gt;';
+            nextButton.className = 'fullscreen-nav next';
+            nextButton.onclick = (e) => {
+                e.stopPropagation(); // Prevent toggling fullscreen off
+                showNextMedia(currentElement);
+            };
+
+            
+            // scroll to the currentElement if it's not in view
+            const galleryItem = currentElement.closest('.gallery-item');
+            const rect = galleryItem.getBoundingClientRect();
+            if (rect.top < 0 || rect.bottom > window.innerHeight) {
+                galleryItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            const container = document.querySelector('.container');
+            container.appendChild(prevButton);
+            container.appendChild(nextButton);
+            // document.body.appendChild(nextButton);
+        }
+
+        function removeFullscreenControls() {
+            document.querySelectorAll('.fullscreen-nav').forEach(btn => btn.remove());
+        }
+
+        function showPrevMedia(currentMediaWrapper) {
+            const currentGalleryItem = currentMediaWrapper.closest('.gallery-item');
+            const allGalleryItems = Array.from(document.querySelectorAll('.gallery-container .gallery-item'));
+            const currentIndex = allGalleryItems.indexOf(currentGalleryItem);
+            const prevItem = allGalleryItems[currentIndex - 1];
+
+            if (prevItem) {
+                const prevMediaWrapper = prevItem.querySelector('.media-wrapper');
+                if (prevMediaWrapper) {
+                    // Exit current fullscreen
+                    currentMediaWrapper.classList.remove('fullscreen');
+                    const currentMediaElement = currentMediaWrapper.querySelector('video, audio');
+                    if (currentMediaElement) currentMediaElement.pause();
+                    removeFullscreenControls();
+
+                    // Enter new fullscreen
+                    prevMediaWrapper.classList.add('fullscreen');
+                    const prevMediaElementToPlay = prevMediaWrapper.querySelector('video, audio');
+                    if (prevMediaElementToPlay) prevMediaElementToPlay.play();
+                    addFullscreenControls(prevMediaWrapper);
+                }
+            }
+        }
+
+        function showNextMedia(currentMediaWrapper) {
+            const currentGalleryItem = currentMediaWrapper.closest('.gallery-item');
+            const allGalleryItems = Array.from(document.querySelectorAll('.gallery-container .gallery-item'));
+            const currentIndex = allGalleryItems.indexOf(currentGalleryItem);
+            const nextItem = allGalleryItems[currentIndex + 1];
+
+            if (nextItem) {
+                const nextMediaWrapper = nextItem.querySelector('.media-wrapper');
+                if (nextMediaWrapper) {
+                     // Exit current fullscreen
+                    currentMediaWrapper.classList.remove('fullscreen');
+                    const currentMediaElement = currentMediaWrapper.querySelector('video, audio');
+                    if (currentMediaElement) currentMediaElement.pause();
+                    removeFullscreenControls();
+
+                    // Enter new fullscreen
+                    nextMediaWrapper.classList.add('fullscreen');
+                    const nextMediaElementToPlay = nextMediaWrapper.querySelector('video, audio');
+                    if (nextMediaElementToPlay) nextMediaElementToPlay.play();
+                    addFullscreenControls(nextMediaWrapper);
+                }
+            } else {
+                // If no next item, try to load more and then try again
+                if (!isLoading && !allLoaded) {
+                    loadMoreItems().then(() => {
+                        
+                        const newAllGalleryItems = Array.from(document.querySelectorAll('.gallery-container .gallery-item'));
+                        const newNextItem = newAllGalleryItems[currentIndex + 1];
+                        if (newNextItem) {
+                            const nextMediaWrapper = newNextItem.querySelector('.media-wrapper');
+                            if (nextMediaWrapper) {
+                                showNextMedia(currentMediaWrapper);
+                                // currentMediaWrapper.classList.remove('fullscreen');
+                                // const currentMediaElement = currentMediaWrapper.querySelector('video, audio');
+                                // if (currentMediaElement) currentMediaElement.pause();
+                                // removeFullscreenControls();
+
+                                // nextMediaWrapper.classList.add('fullscreen');
+                                // const nextMediaElementToPlay = nextMediaWrapper.querySelector('video, audio');
+                                // if (nextMediaElementToPlay) nextMediaElementToPlay.play();
+                                // addFullscreenControls(nextMediaWrapper);
+                            }
+                        }
+                    });
                 }
             }
         }

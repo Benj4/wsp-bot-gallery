@@ -26,8 +26,10 @@
                     <div class="timestamp-info"><small><%= formattedDateTime %></small></div>
                 </div>
             <% } else if (row.type === 'audio') { %>
-                <audio controls src="<%= mediaPath %>" title="Audio from <%= userName %>"></audio>
-                <div class="timestamp-info"><small><%= formattedDateTime %></small></div>
+                <div class="media-wrapper" onclick="toggleFullscreen(this, event)">
+                    <audio controls src="<%= mediaPath %>" title="Audio from <%= row.userName %>"></audio>
+                    <div class="timestamp-info"><small><%= formattedDateTime %></small></div>
+                </div>
             <% } else { %>
                 <div class="media-wrapper" onclick="toggleFullscreen(this, event)">
                     <img src="<%= mediaPath %>" >
